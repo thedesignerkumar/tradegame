@@ -1,0 +1,39 @@
+pages
+- register
+	Allows the user to register to the app redirects the user to his portfolio page on successful login
+- login
+	Allows the user to login to the app and redirects to portfolio page of the user on successful login
+- portfolio
+	- Displays the user's list of shares with their current prices and purchased prices with current value
+	- Displays user's cash balance
+	- Link to purchase more share
+	- search option to narrow the list by search
+	- Link to sell share
+- profile
+	- Allows to edit users details apart from username
+	- link to change the password
+- addshare
+- sellshare
+- change password
+
+database tables
+- users
+	- userid - primary
+	- first name - nullable
+	- last name - nullable
+	- username - unique
+	- email address - unique
+	- password
+	- cash - default to Rs 100000
+	- remember_token
+	- created_at
+	- updated_at
+- stocks
+	- stockid - primary
+	- userid - foreign
+	- symbol - unique
+	- name - index
+	- quantity
+	- purchased_price
+	- created_at
+	- updated_at
