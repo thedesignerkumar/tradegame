@@ -24,6 +24,12 @@
                     {{-- <p><strong>Total cost</strong></p> --}}
                     {{-- <p></p> --}}
                     <button type="submit" class="btn btn-primary">Purchase</button>
+                    @if (session()->has('message'))
+                        <span class="help-block">
+                    <strong class="text-danger">{{ session()->get('message') }}</strong>
+                </span>
+                    @endif
+
                 </div>
             </div>
         </form>

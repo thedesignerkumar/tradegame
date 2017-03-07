@@ -60,10 +60,13 @@ class StockController extends Controller
 
         $user = Auth::user();
         $cost = $quantity * $purchase_price;
+        if ($cost > $user->cash) {
+            return back()->with('message', 'Not enough balance');
+        }
         $user->cash = $user->cash - $cost;
         $user->save();
 
-        $message = $quantity . ' shares of ' . $name .  ' purchased succesfully';
+        $message = $quantity . ' shares of ' . $name .  ' purchased successfully';
         return redirect('/home')->with('message', $message);
     }
 
