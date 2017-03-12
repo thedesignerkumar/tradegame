@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Auth;
 use App;
+use App\Services\Yafi;
 
 class HomeController extends Controller
 {
@@ -29,9 +28,9 @@ class HomeController extends Controller
         $user = Auth::user()->load('stocks');
         $stocks = $user->stocks;
         foreach ($stocks as $stock) {
-            $search = new StockController;
-            $current_price = $search->getQuote($stock->symbol);
-            $stock['current_price'] = $current_price[2];
+            $search = new Yafi($stock['symbol']);
+            $current_price = $search->fetchPrice();
+            $stock['current_price'] = $current_price;
         }
         return view('home', [
             'user' => $user,

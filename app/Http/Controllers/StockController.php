@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Yafi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\User;
 use App\Stock;
 
 class StockController extends Controller
 {
     public function purchase($symbol)
     {
-        $share_info = $this->getQuote(strtoupper($symbol));
+        $yafi = new Yafi(strtoupper($symbol));
+        $share_info = $yafi->fetchAll();
         return view('stock.purchase',[
-            'symbol' => $share_info[0],
-            'name' => $share_info[1],
-            'price' => $share_info[2]
+            'symbol' => $share_info['Symbol'],
+            'name' => $share_info['Name'],
+            'price' => $share_info['Price']
         ]);
     }
 
@@ -24,63 +25,42 @@ class StockController extends Controller
         $this->validate($request, [
             'symbol' => 'required|alpha_num|max:10'
         ]);
-        $share_info = $this->getQuote(strtoupper($request->symbol));
-        return back()->with('share_info', [
-            'Symbol' => $share_info[0],
-            'Name' => trim($share_info[1], '"'),
-            'Price' => $share_info[2],
-            'Last trade date' => $share_info[3],
-            'Last trade time' => $share_info[4],
-            'Day\'s high' => $share_info[5],
-            'Day\'s low' => $share_info[6],
-            'Change' => $share_info[7],
-            'Change percent' => $share_info[8]
-        ])
-        ->with('symbol', $share_info[0]);
+        $yafi = new Yafi(strtoupper($request->symbol));
+        $share_info = $yafi->fetchAll();
+        return back()->with(compact('share_info'))
+            ->with('symbol', $request->symbol);
     }
 
-    public function create(Request $request)
+    public function create(Request $request, Stock $stock)
     {
         $this->validate($request, [
             'quantity' => 'required|integer'
         ]);
         $quantity = $request->quantity;
-        $share_info = $this->getQuote(strtoupper($request->symbol));
-        $purchase_price = $share_info[2];
-        $symbol = trim($share_info[0], '"');
-        $name = trim($share_info[1], '"');
+        $yafi = new Yafi(strtoupper($request->symbol));
+        $share_info = $yafi->fetchAll();
 
-        $stock = new Stock;
-        $stock->user_id = Auth::id();
-        $stock->symbol = $symbol;
-        $stock->stock_name = $name;
-        $stock->quantity = $quantity;
-        $stock->purchase_price = $purchase_price;
-        $stock->save();
-
+        // if user doesn't have enough money, return with the error
+        $cost = $quantity * $share_info['Price'];
         $user = Auth::user();
-        $cost = $quantity * $purchase_price;
         if ($cost > $user->cash) {
             return back()->with('message', 'Not enough balance');
         }
+
+        $stock->new_stock($share_info, $quantity);
+
         $user->cash = $user->cash - $cost;
         $user->save();
 
-        $message = $quantity . ' shares of ' . $name .  ' purchased successfully';
+        $message = $quantity . ' shares of ' . $share_info['Name'] .  ' purchased successfully';
         return redirect('/home')->with('message', $message);
-    }
-
-    public function getQuote($symbol)
-    {
-        $share_info = file_get_contents('http://download.finance.yahoo.com/d/quotes.csv?s=' . $symbol . '&f=snl1d1t1hgc1p2&e=.csv');
-        $data = explode(',', $share_info);
-        return $data;
     }
 
     public function sell(Stock $stock)
     {
         $user = Auth::user();
-        $current_price = $this->getQuote($stock->symbol)[2];
+        $yafi = new Yafi($stock->symbol);
+        $current_price = $yafi->fetchPrice();
         $user->cash += $current_price * $stock->quantity;
         $user->save();
         $stock->delete();

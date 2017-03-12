@@ -20,7 +20,7 @@ class CreateUsersTable extends Migration
             $table->string('password');
             $table->string('first_name');
             $table->string('last_name');
-            $table->decimal('cash', 8, 2)->default(100000);
+            $table->decimal('cash', 12, 2)->default(100000);
             $table->string('slug');
             $table->rememberToken();
             $table->timestamps();
